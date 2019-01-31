@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="/style/style.css">
+</head>
+<body>
+<header>
+    <h1>TIC TAC TOE Game</h1>
+    <button onclick="logOut()" type="button" class="cancelbtn">Log Out</button>
+</header>
+<a href="/game" type="button" class="cancelbtn gamesButton">Games</a>
+<h2 id="userHello"></h2>
+<h3 id="turn"></h3>
+<section class="gameControl">
+    <form method="POST" onsubmit="return createNewGame(this)">
+        <input type="number" name="size" min="3" max="10" required>
+        <div>
+            <p>Sign</p>
+            <input type="radio" name="sign" value="X" checked> X<br>
+            <input type="radio" name="sign" value="0">0
+        </div>
+        <div>
+            <p>Type</p>
+            <input type="radio" name="type" value="single" checked> Single<br>
+            <input type="radio" name="type" value="multi">Multi
+        </div>
+
+        <button type="submit">New Game</button>
+    </form>
+</section>
+<section>
+    <h1>Pendind Games</h1>
+    <div id="pendingCont">
+
+    </div>
+</section>
+<section style=" background: green;display: inline-block; margin-left: 50%;">
+    <table id="gameContent">
+    </table>
+</section>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+<script src="/js/index.js"></script>
+<script src="/js/game.js"></script>
+<script src="/js/player.js"></script>
+<script src="/js/socket.js"></script>
+
+<script>
+    let P1 = 'X', P2 = 'O';
+    let player, game;
+    let gameContent = document.getElementById('gameContent');
+    let bizi = [];
+
+    let checkPosition = (ell) => {
+        return !bizi.includes(ell);
+    }
+</script>
+
+</body>
+</html>

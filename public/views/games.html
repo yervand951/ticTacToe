@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+          integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="/style/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<div class="ControlBlock">
+    <div class="form-group">
+        <label for="exampleFormControlSelect1">Sorting tool</label>
+        <select class="form-control" onchange="sortGame(this)">
+            <option selected>newest</option>
+            <option>type</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="searchEll">Search</label>
+        <input type="text" oninput=" searchGame(this)" class="form-control" id="searchEll"
+               placeholder="Search by Nickname">
+    </div>
+</div>
+<body>
+
+<div class="container">
+    <div class="row" id="game-block">
+
+    </div>
+</div>
+
+<nav aria-label="..." class="m-5">
+    <ul class="pagination justify-content-center ">
+        <li class="page-item disabled">
+            <span class="page-link">Previous</span>
+        </li>
+        <li class="page-item"><a class="page-link" href="#" onclick=" getGamePagination(0) ">1</a></li>
+        <li class="page-item active" aria-current="page">
+                <span onclick="getGamePagination(1)" class="page-link">
+                    2
+                    <span class="sr-only">(current)</span>
+                </span>
+        </li>
+        <li class="page-item"><a class="page-link" href="#" onclick="getGamePagination(2)">3</a></li>
+        <li class="page-item"><a class="page-link" href="#" onclick="getGamePagination(3)">4</a></li>
+        <li class="page-item"><a class="page-link" href="#" onclick="getGamePagination(4)">5</a></li>
+        <li class="page-item">
+            <a class="page-link" href="#">Next</a>
+        </li>
+    </ul>
+</nav>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js"
+        integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut"
+        crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"
+        integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k"
+        crossorigin="anonymous"></script>
+
+
+<script>
+
+    function sortGen() {
+        let sortData = 'start';
+
+        return function (ell) {
+
+            if (ell && ell.value === 'type') {
+                sortData = 'type';
+            } else if (ell && ell.value === 'newest') {
+                sortData = 'start';
+            }
+            if (ell) {
+                getGamePagination(0);
+            }
+
+            return sortData;
+        }
+    }
+
+    let sortGame = sortGen();
+
+    function searchGen() {
+        let searchData = '';
+
+        return function (ell) {
+            if (ell) {
+                searchData = ell.value;
+                getGamePagination(0);
+            }
+
+
+            return searchData;
+        }
+    }
+
+    let searchGame = searchGen();
+
+
+    function buildUrl(url, parameters) {
+        let qs = "";
+        for (const key in parameters) {
+            if (parameters.hasOwnProperty(key)) {
+                const value = parameters[key];
+                qs +=
+                    encodeURIComponent(key) + "=" + encodeURIComponent(value) + "&";
+            }
+        }
+        if (qs.length > 0) {
+            qs = qs.substring(0, qs.length - 1);
+            url = url + "?" + qs;
+        }
+
+        return url;
+    }
+
+    function myClick(count) {
+        getGamePagination(count);
+    }
+
+    function getGamePagination(count) {
+        fetch(buildUrl('http://localhost:8000/api/game/', {
+            skip: count * 10,
+            sort: sortGame(),
+            search: searchGame()
+        }), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        }).then((data) => {
+            return data.json();
+        }).then((data) => {
+
+
+            let element = document.querySelector("#game-block");
+
+            element.innerHTML = " "
+            data.map(function (value) {
+
+                element.innerHTML += ` <div class="col-2 block"><a href="/game/${value._id}" > ${value.start} - ${value.end},  nicnames ${value.gamer1.username}  TYPE : ${value.type}</a></div>`
+            })
+
+        });
+    }
+
+    getGamePagination(0);
+
+</script>
+</body>
+</html>

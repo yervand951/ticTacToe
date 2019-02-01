@@ -2,7 +2,7 @@ const Board  = require('./board.js');
 
 class Bot {
   constructor(mark ,size) {
-    this.humanPlayer = false;
+    this.userPlayer = false;
     this.mark = mark;
     this.humanMark = mark === 'x' ? 'o' : 'x';
     this.size = size;

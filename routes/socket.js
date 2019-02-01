@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const gamesController = require('../controllers/games');
 const historiesController = require('../controllers/histories');
-const Game = require('../helpers/game');
+const Game = require('../classes/game');
 
 module.exports = (server) => {
     const io = require('socket.io')(server);
@@ -28,7 +28,6 @@ module.exports = (server) => {
         let stateOfTheGame = [];
         let sign = "0";
         let gameId = 0;
-        let bot = {};
         let type = 'multi';
         let count = 0;
         let game = {};
@@ -42,7 +41,7 @@ module.exports = (server) => {
                     username: socket.decoded.username
                 }
             }).then((gameModel) => {
-                game = new Game(data.size);
+                
                 BOARD_SIZE = +data.size;
                 sign = data.sign;
                 gameId = gameModel._id;
@@ -53,10 +52,7 @@ module.exports = (server) => {
 
                 if (data.type === 'single') {
                     type = 'single';
-                    bot = new Bot(
-                        data.sign === 'X' ? '0' : 'X',
-                        +data.size
-                    );
+                    game = new Game(data.size);
 
                     
 
@@ -116,15 +112,7 @@ module.exports = (server) => {
             socket.broadcast.to(data.room).emit('gameEnd', data);
         });
 
-        socket.on( 'sendLoc', (data) => {
-            console.log('qqqqqq');
-            console.log(game.makeMove([ data.row, data.col ]));
-            // socket.emit('win_game', data);
-            console.log(game);
-            socket.emit('turnPlayed', { row: game.lastPoss.pos[0], col: game.lastPoss.pos[1] });
-        });
-
-        socket.on('sendLoc1', (data) => {
+        socket.on('sendLoc', (data) => {
             if (BOARD_SIZE !== 0) {
 
                 if (isWon(data.row, data.col, sign)) {
@@ -154,26 +142,17 @@ module.exports = (server) => {
 
                         game.makeMove([ data.row, data.col ]);
 
-                        bot.gamerTurn(data.row, data.col);
-                        let turn = bot.turn();
-                        if (turn.col === -1) {
-                            socket.emit('draw_game', data);
-                            socket.broadcast.emit('draw_game', data);
+                        socket.emit('turnPlayed', { row: game.lastPoss.pos[0], col: game.lastPoss.pos[1] });
 
-                            BOARD_SIZE = 0;
-                            stateOfTheGame = [];
-                            bot = {};
-                        }
-                        socket.emit('turnPlayed', turn);
                         historiesController.createHistory({
-                            row: +turn.row,
-                            column: +turn.col,
+                            row: game.lastPoss.pos[0],
+                            column: game.lastPoss.pos[1],
                             bot: true,
                             gameId: gameId,
                             date: Date.now()
                         });
 
-                        if (isWon(turn.row, turn.col, turn.sign)) {
+                        if (isWon(game.lastPoss.pos[0], game.lastPoss.pos[1], game.computerPlayer.mark)) {
                             gamesController.updateGame(gameId, {
                                 end: Date.now(),
                                 win: 'bot'
@@ -183,7 +162,7 @@ module.exports = (server) => {
 
                             BOARD_SIZE = 0;
                             stateOfTheGame = [];
-                            bot = {};
+
                         }
                     } else {
 
@@ -197,7 +176,7 @@ module.exports = (server) => {
 
                     BOARD_SIZE = 0;
                     stateOfTheGame = [];
-                    let bot = {};
+                    count = 0;
 
                 }
             }
@@ -227,153 +206,6 @@ module.exports = (server) => {
 
             return (i >= 0 || j >= 0);
         }
-
-        class Bot {
-            constructor(sign, size) {
-                this.sign = sign;
-                this.size = size;
-                this.stateOfWin = this.createState(size).fill(0);
-                this.stateOfLouse = this.createState(size).fill(0);
-            }
-
-            createState(size) {
-                return new Array(size * 2);
-            }
-
-            setPoint(row, column) {
-                let point = 1;
-
-                this.stateOfWin[row] += point;
-                this.stateOfWin[row] += -point;
-
-                stateOfTheGame[BOARD_SIZE + column] += point
-            }
-
-            bigger(arr) {
-
-                return arr.reduce((max, val) => {
-                    max = (max === undefined || val >= max) ? val : max;
-                    return max;
-                }, []);
-            }
-
-            gamerTurn(value, index) {
-
-                this.stateOfLouse[value] += 1;
-                delete this.stateOfWin[index];
-
-                if (Number.isInteger(this.stateOfLouse[this.size + value])) {
-
-                    this.stateOfLouse[this.size + value] += 1;
-                    delete this.stateOfWin[this.size + value];
-                }
-
-                if (value === index) {
-
-                    if (Number.isInteger(this.stateOfLouse[2 * this.size])) {
-
-                        this.stateOfLouse[2 * this.size] += 1;
-                        delete this.stateOfWin[2 * this.size];
-                    }
-
-                    if ((this.size + 1) / 2 === value && Number.isInteger(this.stateOfLouse[2 * this.size + 1])) {
-                        this.stateOfLouse[2 * this.size + 1] += 1;
-                        delete this.stateOfWin[2 * this.size + 1];
-
-                    }
-                }
-
-                if (index + value === this.size + 1 && Number.isInteger(this.stateOfLouse[2 * this.size + 1])) {
-                    this.stateOfLouse[2 * this.size + 1] += 1;
-                    delete this.stateOfWin[2 * this.size + 1];
-                }
-            }
-
-              minimax(board) {
-                let bestMove = { utility: Number.NEGATIVE_INFINITY };
-                for (let i = 0; i < this.size; i++) {
-                  for (let j = 0; j < this.size; j++) {
-                    if (!board[i][j]) {
-                      const simulatedBoard = Board.generateSimBoard(
-                        board,
-                        [i, j],
-                        this.mark
-                      );
-                      const move = this.minVal(simulatedBoard);
-                      if (move > bestMove.utility) {
-                        bestMove.utility = move;
-                        bestMove.pos = [i, j];
-                      }
-                    }
-                  }
-                }
-                return bestMove;
-            }
-
-            turn() {
-
-                let value = this.bigger(this.stateOfWin);
-                let index = this.stateOfWin.indexOf(value);
-
-                if (index >= this.size) {
-
-                    let value1 = value;
-                    value = index - this.size;
-                    index = value1;
-
-                }
-
-                this.stateConvert(value, index);
-
-                if (index >= this.size) {
-                    let value1 = value;
-                    value = index - this.size;
-                    index = value1;
-                }
-
-                return {
-                    col: index,
-                    row: value,
-                    sign: this.sign
-                }
-
-            }
-
-            stateConvert(value, index) {
-
-                if (Number.isInteger(this.stateOfWin[index])) {
-
-                    this.stateOfWin[index] += 1;
-                    delete this.stateOfLouse[index];
-                }
-
-                if (Number.isInteger(this.stateOfWin[this.size + value])) {
-
-                    this.stateOfWin[this.size + value] += 1;
-                    delete this.stateOfLouse[this.size + value];
-                }
-
-                if (value === index && Number.isInteger(this.stateOfWin[2 * this.size])) {
-
-                    this.stateOfWin[2 * this.size] += 1;
-                    delete this.stateOfLouse[2 * this.size];
-
-                    if ((this.size + 1) / 2 === value && Number.isInteger(this.stateOfWin[2 * this.size + 1])) {
-
-                        this.stateOfWin[2 * this.size + 1] += 1;
-                        delete this.stateOfLouse[2 * this.size + 1];
-
-                    }
-                }
-
-                if (index + value === this.size + 1 && Number.isInteger(this.stateOfWin[2 * this.size + 1])) {
-
-                    this.stateOfWin[2 * this.size + 1] += 1;
-                    delete this.stateOfLouse[2 * this.size + 1];
-                }
-            }
-        }
-
     });
 };
 

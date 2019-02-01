@@ -54,8 +54,8 @@ const getGames = (req, res) => {
     if (req.query.search) {
         query = {$text: {$search: req.query.search}}
     }
-
-    games.find(query, {}, {sort: -req.query.sort, skip: req.query.skip, limit: 10}).then((data) => {
+    console.log(req.query.sort);
+    games.find(query, {}, {sort: req.query.sort, skip: req.query.skip, limit: 10}).then((data) => {
         res.json(data);
     })
 };

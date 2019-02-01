@@ -15,7 +15,6 @@ router.get('/signup', (req, res) => {
 
 //POST new user route (optional, everyone has access)
 router.post('/', auth.optional, (req, res) => {
-    console.log(req.body);
     const {body: {username, password}} = req;
 
     if (!username) {

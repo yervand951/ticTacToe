@@ -48,8 +48,8 @@ class Board {
   }
 
   winner(game) {
-    if (this.isWin(game.humanPlayer.mark)) {
-      return game.humanPlayer;
+    if (this.isWin(game.userPlayer.mark)) {
+      return game.userPlayer;
     }
     return game.computerPlayer;
   }

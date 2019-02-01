@@ -1,7 +1,7 @@
 class UserPlayer {
   constructor(mark) {
 	this.mark = mark;
-	this.humanPlayer = true;
+	this.userPlayer = true;
   }
 }
 

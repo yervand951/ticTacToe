@@ -4,45 +4,45 @@ const UserPlayer = require('./user.js');
 
 class Game {
   constructor(size) {
-    this.tttboard = new Board( null, size );
-    this.humanPlayer = new UserPlayer( 'x', size );
+    this.nativeBoard = new Board( null, size );
+    this.userPlayer = new UserPlayer( 'x', size );
     this.computerPlayer = new Bot( 'o', size );
-    this.currentPlayer = this.humanPlayer;
+    this.currentPlayer = this.userPlayer;
     this.lastPoss = [];
     this.size = size;
   }
 
   get board() {
-    return this.tttboard.board;
+    return this.nativeBoard.board;
   }
 
   get humanWon() {
-    return this.tttboard.won(this.humanPlayer.mark);
+    return this.nativeBoard.won(this.userPlayer.mark);
   }
 
   get computerWon() {
-    return this.tttboard.won(this.computerPlayer.mark);
+    return this.nativeBoard.won(this.computerPlayer.mark);
   }
 
   get gameOver() {
-    return this.tttboard.gameOver();
+    return this.nativeBoard.gameOver();
   }
 
   winner() {
-    return this.tttboard.winner(this);
+    return this.nativeBoard.winner(this);
   }
 
   makeMove(pos) {
 
-    this.tttboard.placeMark(pos, this.currentPlayer);
+    this.nativeBoard.placeMark(pos, this.currentPlayer);
     if (this.gameOver) {
       return;
     }
-    if (this.currentPlayer === this.humanPlayer) {
+    if (this.currentPlayer === this.userPlayer) {
       
       this.currentPlayer = this.computerPlayer;
       this.lastPoss = this.computerPlayer.choosePosition(this);
-      this.currentPlayer = this.humanPlayer;
+      this.currentPlayer = this.userPlayer;
     }
   }
 }

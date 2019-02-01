@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const gamesController = require('../controllers/games');
 const historiesController = require('../controllers/histories');
+const Game = require('../helpers/game');
 
 module.exports = (server) => {
     const io = require('socket.io')(server);
@@ -30,6 +31,7 @@ module.exports = (server) => {
         let bot = {};
         let type = 'multi';
         let count = 0;
+        let game = {};
 
         socket.on('createGame', (data) => {
             gamesController.createGame({
@@ -39,11 +41,13 @@ module.exports = (server) => {
                     id: socket.decoded.id,
                     username: socket.decoded.username
                 }
-            }).then((game) => {
+            }).then((gameModel) => {
+                game = new Game(data.size);
                 BOARD_SIZE = +data.size;
                 sign = data.sign;
-                gameId = game._id;
+                gameId = gameModel._id;
                 stateOfTheGame = new Array(BOARD_SIZE * 2 + 2);
+
                 stateOfTheGame.fill(0);
                 socket.join('room_' + ++roomsCount);
 
@@ -53,6 +57,8 @@ module.exports = (server) => {
                         data.sign === 'X' ? '0' : 'X',
                         +data.size
                     );
+
+                    
 
                     socket.emit('gameCreated', {
                         name: data.name,
@@ -72,7 +78,7 @@ module.exports = (server) => {
                     socket.broadcast.emit('newGame', {
                         name: data.name,
                         size: data.size,
-                        gameId: game._id,
+                        gameId: gameModel._id,
                         sign: (data.sign === 'X') ? '0' : 'X',
                         room: 'room_' + roomsCount
                     });
@@ -89,7 +95,7 @@ module.exports = (server) => {
                         id: socket.decoded.id,
                         username: socket.decoded.username
                     }
-                }).then(() => {
+                }).then((game, err) => {
                     socket.join(data.room);
                     socket.broadcast.to(data.room).emit('player1', {});
                     socket.emit('player2', {name: data.name, size: data.size, room: data.room})
@@ -110,9 +116,17 @@ module.exports = (server) => {
             socket.broadcast.to(data.room).emit('gameEnd', data);
         });
 
+        socket.on( 'sendLoc', (data) => {
+            console.log('qqqqqq');
+            console.log(game.makeMove([ data.row, data.col ]));
+            // socket.emit('win_game', data);
+            console.log(game);
+            socket.emit('turnPlayed', { row: game.lastPoss.pos[0], col: game.lastPoss.pos[1] });
+        });
 
-        socket.on('sendLoc', (data) => {
+        socket.on('sendLoc1', (data) => {
             if (BOARD_SIZE !== 0) {
+
                 if (isWon(data.row, data.col, sign)) {
                     gamesController.updateGame(gameId, {
                         end: Date.now(),
@@ -137,6 +151,8 @@ module.exports = (server) => {
                     });
 
                     if (type === 'single') {
+
+                        game.makeMove([ data.row, data.col ]);
 
                         bot.gamerTurn(data.row, data.col);
                         let turn = bot.turn();
@@ -224,6 +240,14 @@ module.exports = (server) => {
                 return new Array(size * 2);
             }
 
+            setPoint(row, column) {
+                let point = 1;
+
+                this.stateOfWin[row] += point;
+                this.stateOfWin[row] += -point;
+
+                stateOfTheGame[BOARD_SIZE + column] += point
+            }
 
             bigger(arr) {
 
@@ -263,6 +287,27 @@ module.exports = (server) => {
                     this.stateOfLouse[2 * this.size + 1] += 1;
                     delete this.stateOfWin[2 * this.size + 1];
                 }
+            }
+
+              minimax(board) {
+                let bestMove = { utility: Number.NEGATIVE_INFINITY };
+                for (let i = 0; i < this.size; i++) {
+                  for (let j = 0; j < this.size; j++) {
+                    if (!board[i][j]) {
+                      const simulatedBoard = Board.generateSimBoard(
+                        board,
+                        [i, j],
+                        this.mark
+                      );
+                      const move = this.minVal(simulatedBoard);
+                      if (move > bestMove.utility) {
+                        bestMove.utility = move;
+                        bestMove.pos = [i, j];
+                      }
+                    }
+                  }
+                }
+                return bestMove;
             }
 
             turn() {
